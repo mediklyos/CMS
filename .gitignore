@@ -1,0 +1,5 @@
+/data/
+*.zip
+*.swp
+*.pyc
+*.db

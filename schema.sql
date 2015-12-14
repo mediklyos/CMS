@@ -23,3 +23,5 @@ total_drug_cost_65 real);
 .import data/PARTD_PRESCRIBER_PUF_NPI_DRUG_13.tab cms
 
 CREATE INDEX idx ON CMS (drug_name, generic_name, city, state);
+
+DELETE FROM cms WHERE drug_name = "DRUG_NAME";

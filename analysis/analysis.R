@@ -1,63 +1,50 @@
-require(dplyr)
-require(ggplot2)
-require(grid)
-require(knitr)
+require(dplyr, warn.conflicts=FALSE)
+require(rCharts, warn.conflicts=FALSE)
 
-# Function to add credit to image
-add_credits = function(fontsize = 12, color = "#777777", xpos = 0.99) {
-  grid.text("www.mlbernauer.com",
-            x = xpos,
-            y = 0.02,
-            just = "right",
-            gp = gpar(fontsize = fontsize, col = color))
-}
+df = tbl(src_sqlite("../data/cms.db"), "cms")
 
-conn = src_sqlite("../data/cms.db")
-cms = tbl(conn, "cms")
+top_200 = df %>% mutate(Drug = drug_name) %>% group_by(Drug) %>%
+    summarize(Cost = sum(drug_cost),
+              Beneficiaries = sum(bene_count),
+              Claims = sum(claim_count)) %>%
+    arrange(desc(Claims))
 
-# Compute summaries of cms data, 2013.
-#cms_summary = cms %>% group_by(drug_name) %>%
-#    summarize(claim_cnt = n(),
-#              bene_cnt = sum(bene_count),
-#              pres_cnt = count(distinct(npi)),
-#              drug_cst = sum(drug_cost))
-#cms_summary = collect(cms_summary)
+top_200_claim = collect(top_200)[1:200,]
 
-# Top ten drug claim count, 2013.
-#top_ten = (cms_summary %>% arrange(desc(claim_cnt)))[1:10,]
-#kable(top_ten, format = "markdown")
+# Summarize by drug, cost, beneficiary and claims drugs sorted by most claims
+drug_cost = rPlot(Cost ~ Beneficiaries, data = top_200_claim, size="Claims", type="point",
+    tooltip="#!function(item){return item.Drug}!#")
+drug_cost$set(title="Medicare Drug Claims: Top 200 by Claims, 2013")
+drug_cost$addControls("x", value="Beneficiaries", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$addControls("y", value="Cost", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$addControls("size", value="Claims", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$save("./figures/drug-claim.html", standalone=TRUE)
 
-# Top ten drugs by cost, 2013.
-#top_ten = (cms_summary %>% arrange(desc(drug_cst)))[1:10,]
-#kable(top_ten, format="markdown")
+# Summarize b drug, cost, beneficiary and claims drugs sorted by cost
+top_200_cost = top_200 %>% arrange(desc(Cost))
+top_200_cost = collect(top_200_cost)[1:200,]
 
-# Average cost and number of unique products for specialties with
-# highest number of prescribers, 2013.
-top_specialties = cms %>% group_by(specialty) %>%
-    summarize(prescriber_number = count(distinct(npi)),
-              average_total_cost = sum(drug_cost),
-              cost_per_claim = mean(drug_cost),
-              avg_num_product = count(distinct(drug_cost))/count(distinct(npi))) %>%
-    arrange(desc(prescriber_number))
-top_specialties = collect(top_specialties)
-kable(top_specialties[1:10,])
+drug_cost = rPlot(Cost ~ Beneficiaries, data = top_200_cost, color="red", size="Claims", type="point",
+    color=list(const="red"), tooltip="#!function(item){return item.Drug}!#")
+drug_cost$set(title="Medicare Drug Claims: Top 200 by Total Cost, 2013")
+drug_cost$addControls("x", value="Beneficiaries", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$addControls("y", value="Cost", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$addControls("size", value="Claims", values=c("Beneficiaries", "Cost", "Claims"))
+drug_cost$save("./figures/drug-cost.html", standalone=TRUE)
 
-# Prescriber specialties with highest total drug costs, 2013.
-top_prescriber_plot = ggplot(top_specialties[1:10,], aes(x=reorder(specialty, -prescriber_number), y=prescriber_number)) +
-    geom_bar(stat="identity") +
-    theme_minimal() +
-    theme(axis.text.x = element_text(angle=45, hjust=TRUE)) +
-    labs(title="Presciber Specialties with the Highest Total Drug Costs, 2013", x="Practitioner", y="Total Costs")
 
-pdf("./figures/top_prescriber_plot.pdf")
-print(top_prescriber_plot)
-add_credits()
-dev.off()
+top_200_drugs = df %>% mutate(Drug = drug_name) %>% group_by(Drug) %>% summarize(cnt=n()) %>% arrange(desc(cnt))
+top_200_drugs = collect(top_200_drugs)$Drug[1:200]
 
-# Average cost per claim versus total drug costs for selected top specialties, 2013.
-cost = ggplot(top_specialties[1:10,], aes(x=average_total_cost, y=cost_per_claim, size=prescriber_number, label= specialty)) +
-    geom_text() +
-    scale_size(range = c(4,10)) +
-    theme_minimal() +
-    labs(title="Average Cost per Claim versus Total Drug Costs for Selected Top Specialties, 2013", x="Total Drug Costs", y="Cost per Claim") +
-    geom_point()
+# Repeat the analysis by state
+top_drug_by_state = df %>% mutate(Drug = drug_name, State = state) %>%
+    group_by(State) %>%
+    mutate(total_drug_cost = sum(drug_cost)) %>%
+    ungroup() %>%
+    filter(Drug %in% top_200_drugs) %>%
+    group_by(State, Drug) %>%
+    summarize(Cost = sum(drug_cost) / mean(total_drug_cost),
+              Beneficiaries = sum(bene_count),
+              Claims = sum(claim_count))
+
+    

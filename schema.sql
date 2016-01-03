@@ -1,27 +1,25 @@
 CREATE TABLE cms (
-npi text,
-last_name text,
-first_name text,
-city text,
-state text,
-specialty text,
-description text,
-drug_name text,
-generic_name text,
-bene_count int,
-claim_count int,
-day_supply int,
-drug_cost real,
-bene_count_65 int,
-bene_count_65_redact_flag text,
-claim_count_65 int,
-redact_flag_65 text,
-day_supply_65 int,
-total_drug_cost_65 real);
+NPI TEXT,
+NPPES_PROVIDER_LAST_ORG_NAME TEXT,
+NPPES_PROVIDER_FIRST_NAME TEXT,
+NPPES_PROVIDER_CITY TEXT,
+NPPES_PROVIDER_STATE TEXT,
+SPECIALTY_DESC TEXT,
+DESCRIPTION_FLAG TEXT,
+DRUG_NAME TEXT,
+GENERIC_NAME TEXT,
+BENE_COUNT INT,
+TOTAL_CLAIM_COUNT INT,
+TOTAL_DAY_SUPPLY INT,
+TOTAL_DRUG_COST REAL,
+BENE_COUNT_GE65 INT,
+BENE_COUNT_GE65_REDACT_FLAT TEXT,
+TOTAL_CLAIM_COUNT_GE65 INT,
+GE65_REDACT_FLAG TEXT,
+TOTAL_DAY_SUPPLY_GE65 INT,
+TOTAL_DRUG_COST_GE65 REAL);
 
 .separator \t
 .import data/PARTD_PRESCRIBER_PUF_NPI_DRUG_13.tab cms
 
-CREATE INDEX idx ON CMS (drug_name, generic_name, city, state);
-
-DELETE FROM cms WHERE drug_name = "DRUG_NAME";
+DELETE FROM cms WHERE NPI == 'NPI';

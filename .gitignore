@@ -3,5 +3,6 @@
 *.swp
 *.pyc
 *.db
-*.R
+*.R*
 *.tab
+

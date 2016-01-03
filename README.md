@@ -49,7 +49,7 @@ require(data.table)
 #### 2. Establishconnection to database
 
 ```r
-cms_agg = fread("../data/cms_aggregates.csv", sep="|")
+cms_agg = fread("./data/cms_aggregates.csv", sep="|")
 names(cms_agg) = c("drug", "claims", "cost", "bene")
 cms_agg = cms_agg %>%
     mutate(cost_per_bene = cost/bene,
